@@ -1,25 +1,26 @@
-// Arduino Nano + HC-SR04 + TM1637 (Seeed Grove TM1637 library)
-// HC-SR04: TRIG D9, ECHO D10, VCC 5V, GND GND
-// TM1637: CLK D2, DIO D3, VCC 5V, GND GND
+// Arduino Nano + HC-SR04 + TM1637 using GyverSegment
+// HC-SR04: TRIG D9, ECHO D10
+// TM1637: CLK D2, DIO D3
+// Install GyverSegment and GyverIO libraries.
 
-#include <TM1637.h>
+#include <GyverSegment.h>
 
 #define TRIG_PIN 9
 #define ECHO_PIN 10
 #define CLK_PIN 2
 #define DIO_PIN 3
 
-TM1637 display(CLK_PIN, DIO_PIN);
+// GyverSegment expects DIO first, CLK second.
+Disp1637Colon display(DIO_PIN, CLK_PIN, false);
 
 void setup() {
   pinMode(TRIG_PIN, OUTPUT);
   pinMode(ECHO_PIN, INPUT);
   digitalWrite(TRIG_PIN, LOW);
 
-  display.init();
-  display.set(BRIGHT_TYPICAL);
-  display.clearDisplay();
-
+  display.brightness(5);
+  display.clear();
+  display.update();
   Serial.begin(9600);
 }
 
@@ -32,26 +33,26 @@ void loop() {
 
   unsigned long duration = pulseIn(ECHO_PIN, HIGH, 30000UL);
 
-  if (duration == 0) {
-    display.clearDisplay();
-    Serial.println("No signal");
-  } else {
+  display.clear();
+  if (duration > 0) {
     int distance = duration * 0.0343 / 2;
-
     if (distance >= 2 && distance <= 400) {
-      display.display(0, distance / 1000 % 10);
-      display.display(1, distance / 100 % 10);
-      display.display(2, distance / 10 % 10);
-      display.display(3, distance % 10);
-
+      display.setCursorEnd();
+      display.printRight(true);
+      display.print(distance);
+      display.printRight(false);
       Serial.print("Distance: ");
       Serial.print(distance);
       Serial.println(" cm");
     } else {
-      display.clearDisplay();
+      display.print("----");
       Serial.println("Out of range");
     }
+  } else {
+    display.print("----");
+    Serial.println("No signal");
   }
 
+  display.update();
   delay(200);
 }
